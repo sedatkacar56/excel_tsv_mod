@@ -1,0 +1,54 @@
+import pandas as pd
+from scipy.stats import f_oneway
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+import os
+
+# Define the directory to save the Excel file
+output_directory = "C:/Users/sedat/Downloads/ccl_GTEX/excel_output"
+
+# Create the output directory if it doesn't exist
+os.makedirs(output_directory, exist_ok=True)
+
+# Initialize an empty DataFrame to store the pairwise comparison results
+pairwise_comparison_results = pd.DataFrame(columns=['CCL', 'group1', 'group2', 'meandiff', 'p-adj', 'lower', 'upper', 'reject'])
+
+# Loop through files from ccl1.tsv to ccl28.tsv
+for i in range(1, 29):
+    try:
+        # Construct the filename
+        filename = f"C:/Users/sedat/Downloads/ccl_GTEX/ccl{i}.tsv"
+        
+        # Read TSV data with headers
+        data = pd.read_csv(filename, sep='\t')
+
+        # Define the sample types to include
+        sample_types_to_include = ["Primary Tumor", "Solid Tissue Normal", "Normal Tissue"]
+
+        # Filter data and select relevant columns
+        filtered_data = data[data['_sample_type'].isin(sample_types_to_include)][['_sample_type', data.columns[2]]]
+
+        # Rename columns for clarity
+        filtered_data.columns = ['Sample_Type', 'Gene_Expression']
+
+        # Perform Tukey's HSD post hoc test
+        posthoc = pairwise_tukeyhsd(filtered_data['Gene_Expression'], filtered_data['Sample_Type'])
+
+        # Convert the SimpleTable to a DataFrame
+        posthoc_df = pd.DataFrame(data=posthoc._results_table.data[1:], columns=posthoc._results_table.data[0])
+
+        # Add the 'CCL' column
+        posthoc_df['CCL'] = f'CCL{i}'
+
+        # Append the relevant pairwise comparison results to the DataFrame
+        pairwise_comparison_results = pairwise_comparison_results.append(posthoc_df[['CCL', 'group1', 'group2', 'meandiff', 'p-adj', 'lower', 'upper', 'reject']], ignore_index=True)
+
+        print(f"Pairwise comparison results saved for {filename}")
+
+    except FileNotFoundError:
+        print(f"File not found: {filename}. Skipping...")
+
+# Save the DataFrame to an Excel file
+excel_filename = os.path.join(output_directory, "pairwise_comparison_results.xlsx")
+pairwise_comparison_results.to_excel(excel_filename, index=False)
+
+print(f"Pairwise comparison results saved to: {excel_filename}")

@@ -1,0 +1,73 @@
+import pandas as pd
+import seaborn as sns
+import matplotlib.pyplot as plt
+from scipy.stats import f_oneway
+from statsmodels.stats.multicomp import pairwise_tukeyhsd
+from statannot import add_stat_annotation
+
+
+# Read TSV data with headers
+data = pd.read_csv("C:/Users/sedat/Downloads/ccl_GTEX/ccr7.tsv", sep='\t')
+
+# Define the sample types to include
+sample_types_to_include = ["Primary Tumor", "Solid Tissue Normal", "Normal Tissue"]
+
+# Filter data and select relevant columns
+filtered_data = data[data['_sample_type'].isin(sample_types_to_include)][['_sample_type', data.columns[2]]]
+
+# Rename columns for clarity
+filtered_data.columns = ['Sample_Type', 'Gene_Expression']  # Change 'Gene_Expression' to the correct column name
+
+# Perform ANOVA
+groups = filtered_data['Sample_Type'].unique()
+anova_results = {}
+for group in groups:
+    group_data = filtered_data[filtered_data['Sample_Type'] == group]['Gene_Expression']
+    anova_results[group] = group_data
+
+f_statistic, p_value = f_oneway(*anova_results.values())
+print("F-statistic:", f_statistic)
+print("P-value:", p_value)
+
+# Perform Tukey's HSD post hoc test
+posthoc = pairwise_tukeyhsd(filtered_data['Gene_Expression'], filtered_data['Sample_Type'])
+print(posthoc)
+
+# Create box plot and add asterisks for significant differences
+sns.set(style="whitegrid")
+plt.figure(figsize=(10, 6))
+ax = sns.boxplot(x='Sample_Type', y='Gene_Expression', data=filtered_data, showfliers=False)
+#plt.title("Box Plot of Gene Expression by Sample Type")
+plt.xlabel("Sample Type")
+plt.ylabel("Gene Expression")
+
+# Add asterisks for significant differences using statannot
+box_pairs = [("Primary Tumor", "Solid Tissue Normal"), ("Solid Tissue Normal", "Normal Tissue")]
+
+# Customize the asterisk text based on p-values and adjust the line_offset_to_box individually
+line_offsets = [-0.2, -0.05]  # Individual line_offset_to_box values for each box pair
+for i, pair in enumerate(box_pairs):
+    p_val = posthoc.pvalues[i]
+    if p_val < 0.0001:
+        asterisks = "****"
+    elif p_val < 0.001:
+        asterisks = "***"
+    elif p_val < 0.01:
+        asterisks = "**"
+    elif p_val < 0.05:
+        asterisks = "*"
+    else:
+        asterisks = ""
+
+    line_offset = line_offsets[i]  # Use the specific line_offset_to_box value for this box pair
+    add_stat_annotation(ax, data=filtered_data, x='Sample_Type', y='Gene_Expression',
+                        box_pairs=[pair],
+                        test='t-test_ind', text_annot_custom=[asterisks],
+                        verbose=2, line_offset_to_box=line_offset)
+
+plt.show()
+
+
+
+
+

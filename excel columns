@@ -1,0 +1,13 @@
+#read the unique column names of Excel
+
+import pandas as pd
+
+# Read TSV data without headers
+data = pd.read_csv("C:/Users/sedat/Downloads/ccl_GTEX/ccr7.tsv", sep='\t', header=None)
+
+# Print the first few rows to inspect the structure
+print(data.head())
+
+# Print the unique values in the 8th column (index 6)
+unique_values = data.iloc[:, 4].unique()
+print(unique_values)

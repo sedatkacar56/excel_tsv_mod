@@ -14,33 +14,41 @@ os.makedirs(output_directory, exist_ok=True)
 
 # Loop through files from ccl1.tsv to ccl28.tsv
 for i in range(1, 29):
-    # Read TSV data with headers
+    # Construct the filename
     filename = f"C:/Users/sedat/Downloads/ccl_GTEX/ccl{i}.tsv"
-    data = pd.read_csv(filename, sep='\t')
+    
+    try:
+        # Read TSV data with headers
+        data = pd.read_csv(filename, sep='\t')
 
-    # Define the sample types to include
-    sample_types_to_include = ["Primary Tumor", "Solid Tissue Normal", "Normal Tissue"]
+        # Define the sample types to include
+        sample_types_to_include = ["Primary Tumor", "Solid Tissue Normal", "Normal Tissue"]
 
-    # Filter data and select relevant columns
-    filtered_data = data[data['_sample_type'].isin(sample_types_to_include)][['_sample_type', data.columns[2]]]
+        # Filter data and select relevant columns
+        filtered_data = data[data['_sample_type'].isin(sample_types_to_include)][['_sample_type', data.columns[2]]]
 
-    # Rename columns for clarity
-    filtered_data.columns = ['Sample_Type', 'Gene_Expression']
+        # Rename columns for clarity
+        filtered_data.columns = ['Sample_Type', 'Gene_Expression']
 
-    # Define the desired order of categories
-    desired_order = ["Normal Tissue", "Solid Tissue Normal", "Primary Tumor"]
+        # Define the desired order of categories
+        desired_order = ["Normal Tissue", "Solid Tissue Normal", "Primary Tumor"]
 
-    # Create box plot and add asterisks for significant differences
-    sns.set(style="whitegrid")
-    plt.figure(figsize=(10, 6))
-    ax = sns.boxplot(x='Sample_Type', y='Gene_Expression', data=filtered_data, order=desired_order, showfliers=False)
-    plt.xlabel("Sample Type")
-    plt.ylabel("Gene Expression")
+        # Create box plot and add asterisks for significant differences
+        sns.set(style="whitegrid")
+        plt.figure(figsize=(10, 6))
+        ax = sns.boxplot(x='Sample_Type', y='Gene_Expression', data=filtered_data, order=desired_order, showfliers=False)
+        plt.xlabel("Sample Type")
+        plt.ylabel("Gene Expression")
 
-    # Save the plot in the specified output directory
-    plot_filename = os.path.join(output_directory, f"box_plot_ccl{i}.png")
-    plt.savefig(plot_filename)
+        # Save the plot in the specified output directory
+        plot_filename = os.path.join(output_directory, f"box_plot_ccl{i}.png")
+        plt.savefig(plot_filename)
 
-    plt.close()  # Close the plot to free memory
+        plt.close()  # Close the plot to free memory
+
+        print(f"Plot saved for {filename}")
+        
+    except FileNotFoundError:
+        print(f"File not found: {filename}. Skipping...")
 
 print(f"Plots saved in the directory: {output_directory}")
